@@ -89,9 +89,10 @@ buffer:				.space	2
 main:
 	li		$a0, 0
 	jal		draw
-	li		$a0, 1
 	jal		draw
-	li		$a0, 0
+	jal		draw
+	jal		draw
+	li		$a0, 1
 	jal		draw
 	li		$a0, 1
 	jal		draw
@@ -143,6 +144,7 @@ draw:
 display_hand:
 	li		$t0, 0								# iterator for cards in hand
 	li		$t5, 0								# for counting points
+	li		$t8, 0								# number of aces
 	bnez	$a0, display_dealer_hand
 	
 	display_player_hand:
@@ -180,7 +182,11 @@ display_hand:
 			add		$t4, $t4, $t3				# move to index of current card
 												#
 			lw		$t6, 0($t4)					# load the address of current card value pointer
-			add		$t5, $t5, $t6				# add that to current entity score
+			bne		$t6, 11, no_ace				# if not 11 then not an ace
+			addi	$t8, $t8, 1					# add one ace to the hand count
+												#
+			no_ace:								#
+				add		$t5, $t5, $t6			# add that to current entity score
 												#
 			beq		$t0, $t1, display_done		# terminate here to avoid trailing ", "
 												#
@@ -195,19 +201,27 @@ display_hand:
 												#
 			j for_card_in_hand					# do the timewarp
 												#
-	display_done:								#
-		sw		$t5, 0($t7)						# store the score at the entities score address
+	display_done:								#												#
+		ace_low_loop:							#
+			ble		$t5, 21, no_ace_low			# if under 21 then no ace low
+			beqz	$t8, no_ace_low				# if no aces then no ace low
 												#
-		la		$a0, point_count_msg			#
-		li		$v0, 4							#
-		syscall									#
+			addi	$t5, $t5, -10				# turn the ace 11 into a 1
+			addi	$t8, $t8, -1				# one less ace to turn low in hand
 												#
-		move	$a0, $t5						#
-		li		$v0, 1							#
-		syscall									# print the score
+			j		ace_low_loop				#
 												#
-		jr		$ra								#
+		no_ace_low:								#
+			sw		$t5, 0($t7)					# store the score at the entities score address
 												#
-count_points:
-	li		$t0, 0
+			la		$a0, point_count_msg		#
+			li		$v0, 4						#
+			syscall								#
+												#
+			move	$a0, $t5					#
+			li		$v0, 1						#
+			syscall								# print the score
+												#												#
+			jr		$ra							#
+												#
 	
