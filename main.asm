@@ -152,12 +152,56 @@ main:
 		j		again
 
 fy_shuffle:
+	la		$t0, deck
+	la		$t1, deck				# working copy for indexing
+	
+	get_random_generator:
+		li		$v0, 30				# get time in milliseconds to use for seed
+		syscall						#
+								#
+		move	$t2, $a0			# save the lower 32-bits of time
+								#
+		li		$a0, 1				# random generator 1
+		move	$a1, $t2 			# seed is the time stored in $t1
+		li		$v0, 40				# 
+		syscall						# save generator
+
+	li		$t6, 0
+	li		$t7, 52
+	shuffle_loop:					#
+		li		$a0, 1				# load generator 1
+		move	$a1, $t7			# random int from remaining cards
+		li		$v0, 42				#
+		syscall						# generate it for card index
+		
+		move	$t2, $a0			#
+		addi	$t3, $t2, 1			# t2 for working index
+
+		mul		$t2, $t2, 4
+		move	$t1, $t0
+		add		$t1, $t1, $t2		# go to card index
+		lw		$t4, 0($t1)			# and pull that card		
+		array_shift_loop:
+			lw		$t5, 4($t1)
+			sw		$t5, 0($t1)
+			
+			addi	$t1, $t1, 4
+			addi	$t3, $t3, 1
+			
+			blt		$t3, 52, array_shift_loop
+			
+		sw		$t4, 0($t1)
+		
+		addi	$t6, $t6, 1
+		addi	$t7, $t7, -1
+		blt		$t6, 52, shuffle_loop
+		
 	jr		$ra
 
 draw:
 	la		$t0, deck					# get the deck
 	la		$t1, deck_index				# where is the current top of the deck
-	lw		$t2, 0($t1)
+	lw		$t2, 0($t1)					#
 	mul		$t3, $t2, 4					# word offset
 	add		$t0, $t0, $t3				# move to the top of the deck
 	lw		$t0, 0($t0)					# draw that card
