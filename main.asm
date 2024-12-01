@@ -1,17 +1,20 @@
+
 					.data
 					
-player_hand_msg: 	.asciiz "\nPlayer Hand: "
-dealer_hand_msg: 	.asciiz "\nDealer Hand: "
+player_hand_msg: 	.asciiz "\n\nPlayer Hand: "
+dealer_hand_msg: 	.asciiz "\n\nDealer Hand: "
 point_count_msg: 	.asciiz "\nTotal Point Count: "
 action_prompt:		.asciiz "\nHit [0] or Stand [1] > "
-blackjack:			.asciiz "\nBLACKJACK!"
-bust:				.asciiz "\nBUST!"
+dealer_hits:		.asciiz "\nDealer hits..."
+dealer_stands:		.asciiz "\nDealer stands..."
+blackjack:			.asciiz "\n\nBLACKJACK!"
+bust:				.asciiz "\n\nBUST!"
 win_msg:			.asciiz "\nYou win!"
 lose_msg:			.asciiz "\nYou lose!"
-push_msg:			.asciiz "\nPUSH!\nNobody wins..."
-repeat_msg:			.asciiz "\nGo again? Y/N > "
+push_msg:			.asciiz "\n\nPUSH!\nNobody wins..."
+repeat_msg:			.asciiz "\n\nGo again? Y/N > "
 invalid_msg:		.asciiz "\nInvalid input. Try again!\n"
-bye: 				.asciiz "\nToodles! ;)"
+bye: 				.asciiz "\n\nToodles! ;)"
 
 _XX:				.asciiz "XX"
 
@@ -118,11 +121,16 @@ main:
 	jal		display_hand
 
 	jal		prompt_user_turn
-
+	
 	la		$t0, dealer_blind
 	li		$t1, 0
 	sw		$t1, 0($t0)
 
+	jal		dealer_turn
+
+	jal		check_score
+
+check_score:	
 	li		$a0, 0
 	jal		display_hand
 	
@@ -362,36 +370,110 @@ prompt_user_turn:
 		
 		la		$a0, player_score
 		jal		check_bust
+		move	$ra, $s1
 		bnez	$v0, player_bust
 		
-		move	$ra, $s1
 		
 		j		prompt_user_turn
 		
 	stand:
 		jr		$ra
 
+dealer_turn:
+	li $v0, 32
+	li $a0, 1000
+	syscall
+			
+	move	$s1, $ra
+	li		$a0, 1
+	jal		display_hand
+	move	$ra, $s1
+	
+	la		$t0, dealer_score
+	lw		$t0, 0($t0)
+	
+	move	$s1, $ra
+	la		$a0, dealer_score
+	jal		check_bust
+	move	$ra, $s1
+	bnez	$v0, dealer_bust
+
+	
+	li $v0, 32
+	li $a0, 1000
+	syscall
+
+	
+	bge		$t0, 17, dealer_stand
+		
+	li		$v0, 4
+	la		$a0, dealer_hits
+	syscall
+	
+	move	$s1, $ra
+	li		$a0, 1
+	jal		draw
+	move	$ra, $s1
+	
+	
+	
+	j		dealer_turn
+	
+	dealer_stand:
+		li		$v0, 4
+		la		$a0, dealer_stands
+		syscall
+		
+		jr		$ra
+
 check_blackjack:
-	li		$t0, 0
-	li		$t1, 0
-	
+	li		$t0, 0							# player blackjack flag
+	li		$t1, 0							# dealer blackjack flag
+											#
 	la		$t2, player_hand				#
-	li		$t3, 0							# player score
-	
+	lw		$t3, player_score				# player score
 	player_check_blackjack:					
-		lw		$t4, 0($t2)
-		add		$t3, $t3, $t4
-		lw		$t4, 4($t2)
-		add		$t3, $t3, $t4
-		seq		$t0, $t3, 21
+		lw		$t4, 0($t2)					# get card		
+		mul		$t4, $t4, 4
+
+		la		$t5, card_values
+		add		$t5, $t5, $t4				# get value of card
+		lw		$t5, 0($t5)
+
+		add		$t3, $t3, $t5				# add to point total
+
+		lw		$t4, 4($t2)					# get second card
+		mul		$t4, $t4, 4
+
+		la		$t5, card_values
+		add		$t5, $t5, $t4				# get value of card
+		lw		$t5, 0($t5)
+
+		add		$t3, $t3, $t5				# add to point total
+		
+		seq		$t0, $t3, 21				# if 21, then blackjack
 				
-	la		$t2, player_hand				#
-	li		$t3, 0							# dealer score
+	la		$t2, dealer_hand				#
+	lw		$t3, dealer_score				# dealer score
 	dealer_check_blackjack:
 		lw		$t4, 0($t2)
-		add		$t3, $t3, $t4
+		mul		$t4, $t4, 4
+		
+		la		$t5, card_values
+		add		$t5, $t5, $t4				# get value of card
+		lw		$t5, 0($t5)
+
+		add		$t3, $t3, $t5				# add to point total
+		
 		lw		$t4, 4($t2)
-		add		$t3, $t3, $t4
+		mul		$t4, $t4, 4
+
+		la		$t5, card_values
+		add		$t5, $t5, $t4				# get value of card
+		lw		$t5, 0($t5)
+
+		add		$t3, $t3, $t5				# add to point total
+		
 		seq		$t1, $t3, 21
 	check_blackjack_done:
 		bnez	$t0, player_blackjack
