@@ -1,3 +1,60 @@
+# Class Final: Blackjack
+# Author: Lazlo F. Steele
+# Due Date : Dec. 7, 2024 Course: CSC2025-2H1
+# Created: Nov. 25, 2024
+# Last Modified: Dec. 1, 2024
+# Functional Description: Play Blackjack.
+# Language/Architecture: MIPS 32 Assembly
+####################################################################################################
+# Algorithmic Description:
+#	welcome user
+#
+#	shuffle deck:
+#		for n in deck.length():
+#			x = 51 - n
+#			i = random integer from 0-x
+#			card = value of deck[i]
+#			for cards from deck[i]-deck[51]:
+#				deck[i] = deck[i+1]
+#			deck[51] = card
+#
+#	deal card to player
+#	deal card to dealer
+#	deal card to player
+#	deal card to dealer
+#
+#	if only player has a score of 21:
+#		player wins
+#	if only dealer has a score of 21:
+#		dealer wins
+#	if both have a score of 21: 
+#		push and prompt to play again?
+#
+#	while player has not busted (gone over a score of 21):
+#		display game state
+#		prompt for hit/stand
+#		if hit:
+#			draw card
+#			display game state
+#			check for bust
+#		else:	
+#			proceed to dealer turn
+#
+#	if dealer has not busted and is under 17:
+#		display unblinded dealer hand
+#		draw card
+#		check for bust
+#	
+#	if player score > dealer score:
+#		player wins
+#		play again?
+#	if player score < dealer score:
+#		dealer wins
+#		play again?
+#	if player score == dealer score:
+#		push
+#		play again?
+####################################################################################################
 
 					.data
 					
@@ -88,19 +145,25 @@ deck:				.word	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
 							35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
 							46, 47, 48, 49, 50, 51
 deck_index:			.word	0
-player_hand:		.space	44						# theoretical maximum hand size is 11 cards, 4 bytes per card
+player_hand:		.space	44	# theoretical maximum hand size is 11 cards, 4 bytes per card
 dealer_hand:		.space	44
-player_cards:		.word	0
+player_cards:		.word	0	# number of cards in hand
 dealer_cards:		.word	0
 player_score:		.word 	0
 dealer_score:		.word	0
-dealer_blind:		.word	1
+dealer_blind:		.word	1	# dealer starts by displaying blind (one card face down)
 buffer:				.space	2
 
 					.globl		main
-	
+
 					.text
-main:
+####################################################################################################
+# function: main
+# purpose: to control program flow
+# registers used:
+#	$a0 - argument passed
+####################################################################################################
+main:								#
 	jal		fy_shuffle
 
 	li		$a0, 0
@@ -122,14 +185,16 @@ main:
 
 	jal		prompt_user_turn
 	
-	la		$t0, dealer_blind
-	li		$t1, 0
-	sw		$t1, 0($t0)
-
 	jal		dealer_turn
 
 	jal		check_score
-
+	
+####################################################################################################
+# function: main
+# purpose: to control program flow
+# registers used:
+#	$a0 - argument passed
+####################################################################################################
 check_score:	
 	li		$a0, 0
 	jal		display_hand
@@ -380,6 +445,10 @@ prompt_user_turn:
 		jr		$ra
 
 dealer_turn:
+	la		$t0, dealer_blind
+	li		$t1, 0
+	sw		$t1, 0($t0)
+
 	li $v0, 32
 	li $a0, 1000
 	syscall
