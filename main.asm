@@ -9,7 +9,7 @@
 # Algorithmic Description:
 #	welcome user
 #
-#	shuffle deck:
+#	shuffle deck (fisher-yates algorithm):
 #		for n in deck.length():
 #			x = 51 - n
 #			i = random integer from 0-x
@@ -164,31 +164,31 @@ buffer:				.space	2
 #	$a0 - argument passed
 ####################################################################################################
 main:								#
-	jal		fy_shuffle
-
-	li		$a0, 0
-	jal		draw
-	li		$a0, 1
-	jal		draw
-	li		$a0, 0
-	jal		draw
-	li		$a0, 1
-	jal		draw
-
-	jal		check_blackjack
-
-	li		$a0, 0
-	jal		display_hand
-	
-	li		$a0, 1
-	jal		display_hand
-
-	jal		prompt_user_turn
-	
-	jal		dealer_turn
-
-	jal		check_score
-	
+	jal		fy_shuffle				# fisher yates shuffle algorithm
+									#
+	li		$a0, 0					# pass player as argument 
+	jal		draw					# draw card
+	li		$a0, 1					# pass dealer as argument
+	jal		draw					# draw card
+	li		$a0, 0					# player draw
+	jal		draw					#
+	li		$a0, 1					# dealer draw
+	jal		draw					#
+									#
+	jal		check_blackjack			# does anybody have 21 points?
+									#
+	li		$a0, 0					# pass player as argument
+	jal		display_hand			# show player hand
+									#
+	li		$a0, 1					# pass dealer as argument
+	jal		display_hand			# show dealer hand
+									#
+	jal		prompt_user_turn		# player turn
+									#
+	jal		dealer_turn				# dealer turn
+									#
+	jal		check_score				# who won?
+									#
 ####################################################################################################
 # function: main
 # purpose: to control program flow
