@@ -161,7 +161,7 @@ buffer:				.space	2
 # function: main
 # purpose: to control program flow
 # registers used:
-#	$a0 - argument passed
+#	$a0 - player = 0, dealer = 1
 ####################################################################################################
 main:								#
 	jal		fy_shuffle				# fisher yates shuffle algorithm
@@ -190,10 +190,11 @@ main:								#
 	jal		check_score				# who won?
 									#
 ####################################################################################################
-# function: main
-# purpose: to control program flow
+# function: check_score
+# purpose: to check for who won
 # registers used:
 #	$a0 - argument passed
+#
 ####################################################################################################
 check_score:	
 	li		$a0, 0
