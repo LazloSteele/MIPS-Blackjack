@@ -193,84 +193,111 @@ main:								#
 # function: check_score
 # purpose: to check for who won
 # registers used:
-#	$a0 - argument passed
-#
+#	$a0 - player/dealer, and messages for print
+#	$v0 - syscall codes
+#	$t0 - player score
+#	$t1 - dealer score
 ####################################################################################################
-check_score:	
-	li		$a0, 0
-	jal		display_hand
-	
-	li		$a0, 1
-	jal		display_hand
-	
-	la		$t0, player_score
-	lw		$t0, 0($t0)
-	la		$t1, dealer_score
-	lw		$t1, 0($t1)
-	
-	beq		$t0, $t1, push
-	bgt		$t0, $t1, player_win
-	
-	dealer_win:
-		li		$v0, 4
-		la		$a0, lose_msg
-		syscall
-		
-		j		again
-
-	player_win:
-		li		$v0, 4
-		la		$a0, win_msg
-		syscall
-	
-		j		again
-
-fy_shuffle:
-	la		$t0, deck
-	la		$t1, deck				# working copy for indexing
-	
-	get_random_generator:
-		li		$v0, 30				# get time in milliseconds to use for seed
+check_score:						# 
+	li		$a0, 0					# 
+	jal		display_hand			# display player hand
+									#
+	li		$a0, 1					#
+	jal		display_hand			# display dealer hand
+									#
+	la		$t0, player_score		#
+	lw		$t0, 0($t0)				# get player score
+	la		$t1, dealer_score		#
+	lw		$t1, 0($t1)				# get dealer score
+									#
+	beq		$t0, $t1, push			# if player score == dealer score then push
+	bgt		$t0, $t1, player_win	# if player score > dealer score then player wins
+									#
+	dealer_win:						# otherwise:
+		li		$v0, 4				#
+		la		$a0, lose_msg		#
+		syscall						# player loses
+									#
+		j		again				#
+									#
+	player_win:						#
+		li		$v0, 4				#
+		la		$a0, win_msg		#
 		syscall						#
-								#
-		move	$t2, $a0			# save the lower 32-bits of time
-								#
-		li		$a0, 1				# random generator 1
-		move	$a1, $t2 			# seed is the time stored in $t1
-		li		$v0, 40				# 
-		syscall						# save generator
-
-	li		$t6, 0
-	li		$t7, 52
-	shuffle_loop:					#
-		li		$a0, 1				# load generator 1
-		move	$a1, $t7			# random int from remaining cards
-		li		$v0, 42				#
-		syscall						# generate it for card index
-		
-		move	$t2, $a0			#
-		addi	$t3, $t2, 1			# t2 for working index
-
-		mul		$t2, $t2, 4
-		move	$t1, $t0
-		add		$t1, $t1, $t2		# go to card index
-		lw		$t4, 0($t1)			# and pull that card		
-		array_shift_loop:
-			lw		$t5, 4($t1)
-			sw		$t5, 0($t1)
-			
-			addi	$t1, $t1, 4
-			addi	$t3, $t3, 1
-			
-			blt		$t3, 52, array_shift_loop
-			
-		sw		$t4, 0($t1)
-		
-		addi	$t6, $t6, 1
-		addi	$t7, $t7, -1
-		blt		$t6, 52, shuffle_loop
-		
-	jr		$ra
+									#
+		j		again				#
+									#
+####################################################################################################
+# function: fy_shuffle
+# purpose: a fisher-yates shuffling algorithm
+# registers used:
+#	$a0 - arguments for prng
+#	$v0 - syscall codes
+#	$t0 - deck
+#	$t1 - working copy of deck
+#	$t2 - random card index
+#	$t3 - working index in deck
+#	$t4 - random card value
+#	$t5 - next card in deck
+#	$t6 - iterator for deck
+#	$t7 - negative offset for random number generation
+####################################################################################################									
+fy_shuffle:										#
+	la		$t0, deck							# deck
+	la		$t1, deck							# working copy for indexing
+												#
+	get_random_generator:						#
+		li		$v0, 30							# get time in milliseconds to use for seed
+		syscall									#
+												#
+		move	$t2, $a0						# save the lower 32-bits of time
+												#
+		li		$a0, 1							# random generator 1
+		move	$a1, $t2 						# seed is the time stored in $t1
+		li		$v0, 40							# 
+		syscall									# save generator
+												#
+	li		$t6, 0								# iterator for deck size
+	li		$t7, 52								# offset for random generation
+	shuffle_loop:								#
+		li		$a0, 1							# load generator 1
+		move	$a1, $t7						# random int from remaining cards
+		li		$v0, 42							#
+		syscall									# generate it for card index
+												#
+		move	$t2, $a0						#
+		addi	$t3, $t2, 1						# t2 for working index
+												#
+		mul		$t2, $t2, 4						# multiply index by four for word offset
+		move	$t1, $t0						# load the deck
+		add		$t1, $t1, $t2					# go to card index
+		lw		$t4, 0($t1)						# and pull that card		
+		array_shift_loop:						#
+			lw		$t5, 4($t1)					# go to next card
+			sw		$t5, 0($t1)					# and move it down the deck
+												#
+			addi	$t1, $t1, 4					# iterate the deck index
+			addi	$t3, $t3, 1					# iterate the iterator
+												#
+			blt		$t3, 52, array_shift_loop	# and if it has not reached the end of the deck then recurse
+												#
+		sw		$t4, 0($t1)						# then put the drawn card at the end of the deck
+												#
+		addi	$t6, $t6, 1						# iterate the iterator
+		addi	$t7, $t7, -1					# iterate down the remaining cards to shuffle
+		blt		$t6, 52, shuffle_loop			# if you have not shuffled all cards then recurse!
+												#
+	jr		$ra									#
+												#
+####################################################################################################
+# function: check_score
+# purpose: to check for who won
+# registers used:
+#	$a0 - player/dealer, and messages for print
+#	$v0 - syscall codes
+#	$t0 - player score
+#	$t1 - dealer score
+####################################################################################################
 
 draw:
 	la		$t0, deck					# get the deck
