@@ -290,16 +290,18 @@ fy_shuffle:										#
 	jr		$ra									#
 												#
 ####################################################################################################
-# function: check_score
-# purpose: to check for who won
+# function: draw
+# purpose: to draw a card
 # registers used:
-#	$a0 - player/dealer, and messages for print
-#	$v0 - syscall codes
-#	$t0 - player score
-#	$t1 - dealer score
+#	$a0 - player/dealer
+#	$t0 - deck address, drawn card
+#	$t1 - deck index address, hand address
+#	$t2 - index value for current top of the deck, number of cards address
+#	$t3 - index value multiplied by four for word offset, number of cards in hand
+#	$t4 - number of cards multiplied by four for word offset
+#	$ra	- return address
 ####################################################################################################
-
-draw:
+draw:									#
 	la		$t0, deck					# get the deck
 	la		$t1, deck_index				# where is the current top of the deck
 	lw		$t2, 0($t1)					#
@@ -332,6 +334,7 @@ draw:
 										#
 		jr		$ra						#
 										#
+										
 display_hand:
 	move	$s0, $a0							# whose hand is it?
 												#
