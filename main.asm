@@ -450,47 +450,57 @@ display_hand:									#
 												#												#
 			jr		$ra							#
 												#
-prompt_user_turn:
-	la		$a0, action_prompt
-	li		$v0, 4
-	syscall
-	
-	la		$a0, buffer
-	li		$a1, 2
-	li		$v0, 8
-	syscall
-	
-	la		$t0, buffer
-	lb		$t0, 0($t0)
-
-	beq		$t0, '0', hit
-	beq		$t0, '1', stand
-	
-	la		$a0, invalid_msg
-	li		$v0, 4
-	syscall
-	
-	j		prompt_user_turn
-	
-	hit:
-		move	$s1, $ra
-		li		$a0, 0
-		jal		draw
-		
-		li		$a0, 0
-		jal		display_hand
-		
-		la		$a0, player_score
-		jal		check_bust
-		move	$ra, $s1
-		bnez	$v0, player_bust
-		
-		
-		j		prompt_user_turn
-		
-	stand:
-		jr		$ra
-
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
+prompt_user_turn:					#
+	la		$a0, action_prompt		#
+	li		$v0, 4					#
+	syscall							# print the action prompt
+									#
+	la		$a0, buffer				#
+	li		$a1, 2					#
+	li		$v0, 8					#
+	syscall							# read string input
+									#
+	la		$t0, buffer				#
+	lb		$t0, 0($t0)				# load the inputted value
+									#
+	beq		$t0, '0', hit			# if value is 0 hit
+	beq		$t0, '1', stand			# if value is 1 stand
+									#
+	la		$a0, invalid_msg		#
+	li		$v0, 4					#
+	syscall							# otherwise display invalid input
+									#
+	j		prompt_user_turn		# and try again
+									#
+	hit:							#
+		move	$s1, $ra			# save return addres 
+		li		$a0, 0				# load player flag
+		jal		draw				# and draw
+									#
+		li		$a0, 0				# load player flag
+		jal		display_hand		# and show hand
+									#
+		la		$a0, player_score	#
+		jal		check_bust			# did player bust (go over 21 points)
+		move	$ra, $s1			# restore return address
+		bnez	$v0, player_bust	# if bust flag true then player busted
+									#
+									#
+		j		prompt_user_turn	# go again
+									#
+	stand:							#
+		jr		$ra					# if stand, return to caller
+									#
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
 dealer_turn:
 	la		$t0, dealer_blind
 	li		$t1, 0
@@ -541,8 +551,13 @@ dealer_turn:
 		syscall
 		
 		jr		$ra
-
-check_blackjack:
+		
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
+check_blackjack:							#
 	li		$t0, 0							# player blackjack flag
 	li		$t1, 0							# dealer blackjack flag
 											#
@@ -589,11 +604,11 @@ check_blackjack:
 		lw		$t5, 0($t5)
 
 		add		$t3, $t3, $t5				# add to point total
-		
-		seq		$t1, $t3, 21
-	check_blackjack_done:
-		bnez	$t0, player_blackjack
-		bnez	$t1, dealer_blackjack
+											#
+		seq		$t1, $t3, 21				#
+	check_blackjack_done:					#
+		bnez	$t0, player_blackjack		#
+		bnez	$t1, dealer_blackjack		#
 		
 		jr		$ra
 	push:
@@ -633,6 +648,11 @@ check_blackjack:
 		
 		j		again
 
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
 check_bust:
 	lw		$t0, 0($a0)
 	li		$v0, 0
@@ -644,6 +664,11 @@ check_bust:
 	check_done:
 		jr		$ra
 		
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
 player_bust:
 	la		$a0, bust
 	li		$v0, 4
@@ -654,6 +679,11 @@ player_bust:
 	
 	j		again
 	
+####################################################################################################
+# function: 
+# purpose: 
+# registers used:
+####################################################################################################
 dealer_bust:
 	la		$a0, bust
 	li		$v0, 4
