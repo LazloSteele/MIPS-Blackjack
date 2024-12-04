@@ -334,80 +334,96 @@ draw:									#
 										#
 		jr		$ra						#
 										#
-										
-display_hand:
+####################################################################################################
+# function: display_hand
+# purpose: to display cards in hands
+# registers used:
+#	$a0 - player or dealer?
+#	$t0 - iterator for cards in hand
+#	$t1 - cards in hand
+#	$t2 - hand address
+#	$t3 - current card
+#	$t4 - card value table and display table addresses
+#	$t5 - working score
+#	$t6 - current card value
+#	$t7 - score address
+#	$t8 - number of aces found in hand
+#	$t9 - display dealer as blind (first card face down)? 0: No, 1: Yes
+#	$s0 - player or dealer, saved
+####################################################################################################										
+display_hand:									#
 	move	$s0, $a0							# whose hand is it?
 												#
 	li		$t0, 0								# iterator for cards in hand
 	li		$t5, 0								# for counting points
 	li		$t8, 0								# number of aces
-	bnez	$s0, display_dealer_hand
-	
-	display_player_hand:
-		lw		$t1, player_cards
-		la		$t2, player_hand
-		la		$t7, player_score
-				
-		la		$a0, player_hand_msg
-	
-		j		display_loop
-		
-	display_dealer_hand:
-		lw		$t1, dealer_cards
-		la		$t2, dealer_hand
-		la		$t7, dealer_score
-		lw		$t9, dealer_blind
-		
-		la		$a0, dealer_hand_msg
-	
-	display_loop:
+	bnez	$s0, display_dealer_hand			#
+												#
+	display_player_hand:						# load:
+		lw		$t1, player_cards				#	player card count
+		la		$t2, player_hand				#	player hand
+		la		$t7, player_score				#	player score
+												#
+		la		$a0, player_hand_msg			#	player hand message
+												#
+		j		display_loop					#
+												#
+	display_dealer_hand:						# load:
+		lw		$t1, dealer_cards				#	the same for the dealer plus...
+		la		$t2, dealer_hand				#
+		la		$t7, dealer_score				#
+		lw		$t9, dealer_blind				#	if the dealer is displaying blind (first card face down)
+												#
+		la		$a0, dealer_hand_msg			#
+												#
+	display_loop:								#
 		addi	$t1, $t1, -1					# 0 based indexing
-		li		$v0, 4
-		syscall
-
-		for_card_in_hand:
-			beqz	$s0, not_blind_dealer
-			beqz	$t9, not_blind_dealer
-			bnez	$t0, not_blind_dealer
-			
-			la		$a0, _XX
-			li		$v0, 4
-			syscall
-
-			j	normal_print			
-			
-			not_blind_dealer:
-				lw		$t3, 0($t2)					# current card
-				mul		$t3, $t3, 4					# word offset
-													#
-				la		$t4, card_names				# load table of card name pointers
-				add		$t4, $t4, $t3				# move to index of current card
-													#
-				lw		$a0, 0($t4)					# load the address of the current card name pointer
-				li		$v0, 4						#
-				syscall								# and print the card
+		li		$v0, 4							#
+		syscall									# display whose hand it is
 												#
-				la		$t4, card_values			# load table of card value pointers
-				add		$t4, $t4, $t3				# move to index of current card
+		for_card_in_hand:						#
+			beqz	$s0, not_blind_dealer		# if player then not blind dealer
+			beqz	$t9, not_blind_dealer		# if dealer not blind then not blind dealer
+			bnez	$t0, not_blind_dealer		# if not first card then not blind dealer
 												#
-				lw		$t6, 0($t4)					# load the address of current card value pointer
-				bne		$t6, 11, no_ace				# if not 11 then not an ace
-				addi	$t8, $t8, 1					# add one ace to the hand count
+			la		$a0, _XX					#
+			li		$v0, 4						#
+			syscall								# print first card as "XX" for blind
+												#
+			j	normal_print					#
+												#
+			not_blind_dealer:					#
+				lw		$t3, 0($t2)				# current card
+				mul		$t3, $t3, 4				# word offset
+												#
+				la		$t4, card_names			# load table of card name pointers
+				add		$t4, $t4, $t3			# move to index of current card
+												#
+				lw		$a0, 0($t4)				# load the address of the current card name pointer
+				li		$v0, 4					#
+				syscall							# and print the card
+												#
+				la		$t4, card_values		# load table of card value pointers
+				add		$t4, $t4, $t3			# move to index of current card
+												#
+				lw		$t6, 0($t4)				# load the address of current card value pointer
+				bne		$t6, 11, no_ace			# if not 11 then not an ace
+				addi	$t8, $t8, 1				# add one ace to the hand count
 												#
 			no_ace:								#
 				add		$t5, $t5, $t6			# add that to current entity score
 												#
 			normal_print:						#
-				beq		$t0, $t1, display_done		# terminate here to avoid trailing ", "
+				beq		$t0, $t1, display_done	# terminate here to avoid trailing ", "
 												#
 				li		$v0, 11					#
-				li		$a0, ','					#
-				syscall								#
-				li		$a0, ' '					#
-				syscall								#
+				li		$a0, ','				#
+				syscall							#
+				li		$a0, ' '				#
+				syscall							#
 												#
-				addi	$t0, $t0, 1					# iterate the card counter
-				addi	$t2, $t2, 4					# iterate the current card pointer address
+				addi	$t0, $t0, 1				# iterate the card counter
+				addi	$t2, $t2, 4				# iterate the current card pointer address
 												#
 			j for_card_in_hand					# do the timewarp
 												#
