@@ -57,7 +57,7 @@
 ####################################################################################################
 
 					.data
-					
+welcome_msg:		.asciiz "I am the blackjacker! Prepare to be jacked!\n\nGet as close to 21 as possible without busting!\nShuffling may take a second..."					
 player_hand_msg: 	.asciiz "\n\nPlayer Hand: "
 dealer_hand_msg: 	.asciiz "\n\nDealer Hand: "
 point_count_msg: 	.asciiz "\nTotal Point Count: "
@@ -131,6 +131,7 @@ _JS:				.asciiz "JS"
 _QS:				.asciiz "QS"
 _KS:				.asciiz "KS"
 
+					.align	2
 card_names:			.word 	_AD, _2D, _3D, _4D, _5D, _6D, _7D, _8D, _9D, _10D, _JD, _QD, _KD, 
 							_AC, _2C, _3C, _4C, _5C, _6C, _7C, _8C, _9C, _10C, _JC, _QC, _KC, 
 							_AH, _2H, _3H, _4H, _5H, _6H, _7H, _8H, _9H, _10H, _JH, _QH, _KH, 
@@ -164,6 +165,8 @@ buffer:				.space	2
 #	$a0 - player = 0, dealer = 1
 ####################################################################################################
 main:								#
+	jal		welcome					# welcome the user
+									#
 	jal		fy_shuffle				# fisher yates shuffle algorithm
 									#
 	li		$a0, 0					# pass player as argument 
