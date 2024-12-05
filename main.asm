@@ -451,9 +451,15 @@ display_hand:									#
 			jr		$ra							#
 												#
 ####################################################################################################
-# function: 
-# purpose: 
+# function: prompt_user_turn
+# purpose: to handle player turn
 # registers used:
+#	$a0 - arguments
+#	$a1 - arguments
+#	$v0 - syscall codes and return values
+#	$t0 - player turn value
+#	$s1 - saved return address
+#	$ra - return address
 ####################################################################################################
 prompt_user_turn:					#
 	la		$a0, action_prompt		#
@@ -497,65 +503,76 @@ prompt_user_turn:					#
 		jr		$ra					# if stand, return to caller
 									#
 ####################################################################################################
-# function: 
-# purpose: 
+# function: dealer_turn
+# purpose: to handle the dealer turn
 # registers used:
+#	$a0 - arguments
+#	$v0 - syscall codes and return values
+#	$t0 - card value
+#	$s1 - saved return address
+#	$ra - return address
 ####################################################################################################
-dealer_turn:
-	la		$t0, dealer_blind
-	li		$t1, 0
-	sw		$t1, 0($t0)
-
-	li $v0, 32
-	li $a0, 1000
-	syscall
-			
-	move	$s1, $ra
-	li		$a0, 1
-	jal		display_hand
-	move	$ra, $s1
-	
-	la		$t0, dealer_score
-	lw		$t0, 0($t0)
-	
-	move	$s1, $ra
-	la		$a0, dealer_score
-	jal		check_bust
-	move	$ra, $s1
-	bnez	$v0, dealer_bust
-
-	
-	li $v0, 32
-	li $a0, 1000
-	syscall
-
-	
-	bge		$t0, 17, dealer_stand
-		
-	li		$v0, 4
-	la		$a0, dealer_hits
-	syscall
-	
-	move	$s1, $ra
-	li		$a0, 1
-	jal		draw
-	move	$ra, $s1
-	
-	
-	
-	j		dealer_turn
-	
-	dealer_stand:
-		li		$v0, 4
-		la		$a0, dealer_stands
-		syscall
-		
-		jr		$ra
-		
+dealer_turn:						#
+	la		$t0, dealer_blind		# 
+	li		$t1, 0					#
+	sw		$t1, 0($t0)				# dealer_blind = false
+									#
+	li $v0, 32						# 
+	li $a0, 1000					#
+	syscall							# pause for effect
+									#
+	move	$s1, $ra				#
+	li		$a0, 1					#
+	jal		display_hand			# show the dealer hand
+	move	$ra, $s1				#
+									#
+	la		$t0, dealer_score		#
+	lw		$t0, 0($t0)				# get the dealer score
+									#
+	move	$s1, $ra				#
+	la		$a0, dealer_score		#
+	jal		check_bust				# did the dealer bust?
+	move	$ra, $s1				#
+	bnez	$v0, dealer_bust		#
+									#
+									#
+	li $v0, 32						# 
+	li $a0, 1000					#
+	syscall							# pause for effect
+									#
+									#
+	bge		$t0, 17, dealer_stand	# if the score >= 17 stand
+									#
+	li		$v0, 4					#
+	la		$a0, dealer_hits		#
+	syscall							# dealer hits message
+									#
+	move	$s1, $ra				#
+	li		$a0, 1					#
+	jal		draw					# dealer draws
+	move	$ra, $s1				#
+									#
+									#
+									#
+	j		dealer_turn				# and go again
+									#
+	dealer_stand:					#
+		li		$v0, 4				#
+		la		$a0, dealer_stands	#
+		syscall						# dealer stands message
+									#
+		jr		$ra					# return to caller
+									#
 ####################################################################################################
-# function: 
-# purpose: 
+# function: check_blackjack
+# purpose: did anybody get dealt 21 on the opening hand?
 # registers used:
+#	$t0 - player blackjack
+#	$t1 - dealer blackjack
+#	$t2 - player/dealer hand
+#	$t3 - player/dealer score
+#	$t4 - current card
+#	$t5 - card value
 ####################################################################################################
 check_blackjack:							#
 	li		$t0, 0							# player blackjack flag
@@ -563,137 +580,140 @@ check_blackjack:							#
 											#
 	la		$t2, player_hand				#
 	lw		$t3, player_score				# player score
-	player_check_blackjack:					
+	player_check_blackjack:					#
 		lw		$t4, 0($t2)					# get card		
-		mul		$t4, $t4, 4
-
-		la		$t5, card_values
+		mul		$t4, $t4, 4					#
+											#
+		la		$t5, card_values			#
 		add		$t5, $t5, $t4				# get value of card
-		lw		$t5, 0($t5)
-
+		lw		$t5, 0($t5)					#
+											#
 		add		$t3, $t3, $t5				# add to point total
-
+											#
 		lw		$t4, 4($t2)					# get second card
-		mul		$t4, $t4, 4
-
-		la		$t5, card_values
+		mul		$t4, $t4, 4					#
+											#
+		la		$t5, card_values			#
 		add		$t5, $t5, $t4				# get value of card
-		lw		$t5, 0($t5)
-
+		lw		$t5, 0($t5)					#
+											#
 		add		$t3, $t3, $t5				# add to point total
-		
+											#
 		seq		$t0, $t3, 21				# if 21, then blackjack
-				
+											#
 	la		$t2, dealer_hand				#
 	lw		$t3, dealer_score				# dealer score
-	dealer_check_blackjack:
-		lw		$t4, 0($t2)
-		mul		$t4, $t4, 4
-		
-		la		$t5, card_values
+	dealer_check_blackjack:					#
+		lw		$t4, 0($t2)					#
+		mul		$t4, $t4, 4					#
+											#
+		la		$t5, card_values			#
 		add		$t5, $t5, $t4				# get value of card
-		lw		$t5, 0($t5)
-
+		lw		$t5, 0($t5)					#
+											#
 		add		$t3, $t3, $t5				# add to point total
-		
-		lw		$t4, 4($t2)
-		mul		$t4, $t4, 4
-
-		la		$t5, card_values
+											#
+		lw		$t4, 4($t2)					#
+		mul		$t4, $t4, 4					#
+											#
+		la		$t5, card_values			#
 		add		$t5, $t5, $t4				# get value of card
-		lw		$t5, 0($t5)
-
+		lw		$t5, 0($t5)					#
+											#
 		add		$t3, $t3, $t5				# add to point total
 											#
 		seq		$t1, $t3, 21				#
 	check_blackjack_done:					#
 		bnez	$t0, player_blackjack		#
 		bnez	$t1, dealer_blackjack		#
-		
-		jr		$ra
-	push:
-		li		$v0, 4
-		la		$a0, push_msg
-		syscall
-		
-		j		again
-		
-	player_blackjack:
-		beq		$t0, $t1, push
-		li		$v0, 4
-		la		$a0, blackjack
-		syscall
-
-		la		$a0, win_msg
-		syscall
-		
-		j		again
-	
-	dealer_blackjack:
-		li		$t2, 0
-		la		$t3, dealer_blind
-		sw		$t2, 0($t3)
-		
-		li		$a0, 1
-		move	$s0, $ra
-		jal		display_hand
-		move	$ra, $s0
-	
-		li		$v0, 4
-		la		$a0, blackjack
-		syscall
-
-		la		$a0, lose_msg
-		syscall
-		
-		j		again
-
+											#
+		jr		$ra							#
+	push:									#
+		li		$v0, 4						#
+		la		$a0, push_msg				#
+		syscall								# it's a tie!
+											#
+		j		again						#
+											#
+	player_blackjack:						#
+		beq		$t0, $t1, push				#
+		li		$v0, 4						#
+		la		$a0, blackjack				#
+		syscall								# print blackjack
+											#
+		la		$a0, win_msg				#
+		syscall								# player wins!
+											#
+		j		again						# play again?
+											#
+	dealer_blackjack:						#
+		li		$t2, 0						#
+		la		$t3, dealer_blind			#
+		sw		$t2, 0($t3)					# dealer_blind = false
+											#
+		li		$a0, 1						#
+		move	$s0, $ra					#
+		jal		display_hand				# show dealer hand
+		move	$ra, $s0					#
+											#
+		li		$v0, 4						#
+		la		$a0, blackjack				#
+		syscall								# print blackjack
+											#
+		la		$a0, lose_msg				#
+		syscall								# player loses
+											#
+		j		again						# play again?
+											#
 ####################################################################################################
-# function: 
-# purpose: 
+# function: check_bust
+# purpose: did somebody go over 21?
+# registers used:
+#	$a0 - score argument
+#	$v0 - bust flag
+#	$t0 - score
+####################################################################################################
+check_bust:							#
+	lw		$t0, 0($a0)				# move score
+	li		$v0, 0					# set bust flag to false
+									#
+	ble		$t0, 21, check_done		# if the score is less than or equal to 21 then return
+									#
+	li		$v0, 1					# else raise flag and return
+									#
+	check_done:						#
+		jr		$ra					#
+									#
+####################################################################################################
+# function: player_bust
+# purpose: display loss message
 # registers used:
 ####################################################################################################
-check_bust:
-	lw		$t0, 0($a0)
-	li		$v0, 0
-	
-	ble		$t0, 21, check_done
-	
-	li		$v0, 1
-	
-	check_done:
-		jr		$ra
-		
+player_bust:						#
+	la		$a0, bust				#
+	li		$v0, 4					#
+	syscall							# print bust
+									#
+	la		$a0, lose_msg			#
+	syscall							# print player loses
+									#
+	j		again					# play again?
+									#
 ####################################################################################################
-# function: 
-# purpose: 
+# function: dealer_bust
+# purpose: display win message
 # registers used:
 ####################################################################################################
-player_bust:
-	la		$a0, bust
-	li		$v0, 4
-	syscall
-	
-	la		$a0, lose_msg
-	syscall
-	
-	j		again
-	
-####################################################################################################
-# function: 
-# purpose: 
-# registers used:
-####################################################################################################
-dealer_bust:
-	la		$a0, bust
-	li		$v0, 4
-	syscall
-	
-	la		$a0, win_msg
-	syscall
-	
-	j		again
-	
+dealer_bust:						#
+	la		$a0, bust				#
+	li		$v0, 4					#
+	syscall							# print bust
+									#
+	la		$a0, win_msg			# print player wins	
+	syscall							#
+									#
+	j		again					# play again?
+									#
 ####################################################################################################
 # macro: upper
 # purpose: to make printing messages more eloquent
@@ -795,6 +815,21 @@ reenter:									#
 	
 	j	main								# truly do the timewarp again
 											#
+####################################################################################################
+# function: welcome
+# purpose: to welcome the user to our program
+# registers used:
+#	$v0 - syscall codes
+#	$a0 - passing arugments to subroutines
+#	$ra	- return address
+####################################################################################################	
+welcome:							# 
+	la	$a0, welcome_msg			# load welcome message
+	li	$v0, 4						# 
+	syscall							# and print
+									#
+	jr	$ra							# return to caller
+									#
 ####################################################################################################
 # function: end
 # purpose: to eloquently terminate the program
